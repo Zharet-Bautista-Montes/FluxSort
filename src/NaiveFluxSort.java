@@ -60,7 +60,7 @@ public class NaiveFluxSort
 	{
 		streams = 0; comparisons = 0; swaps = 0;
 		System.out.println("Length \t Swaps");
-		for(int x = 1; x <= 100; x++)
+		for(int x = 1; x <= 1000; x++)
 		{
 			testarray = IntStream.generate(() -> new Random().nextInt(100)).limit(x).toArray();
 			streams = 0; comparisons = 0; swaps = 0;
