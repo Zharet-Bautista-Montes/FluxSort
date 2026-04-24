@@ -2,7 +2,7 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.stream.IntStream;
 
-public class FluxSort 
+public class NaiveFluxSort 
 {
 	//{'E', 'A', 'O', 'S', 'R', 'N', 'I', 'D', 'L', 'C', 'T', 'U', 'M', 'P', 'B', 'G', 'V', 'Y', 'Q', 'H', 'F', 'Z', 'J', 'X', 'W', 'K', '0', '5', '4', '2', '9', '8', '6', '7', '3', '1' }
 	//{'C', 'A', 'P', 'M', 'E', 'T', 'B', 'S', 'R', 'D', 'L', 'V', 'G', 'F', 'I', 'H', 'O', 'N', 'J', 'Z', 'Q', 'U', 'Y', 'K', 'W', 'X', '9', '4', '1', '3', '0', '5', '7', '2', '6', '8' }
@@ -16,7 +16,7 @@ public class FluxSort
 
 	public static void main(String[] args) 
 	{
-		FluxSort nfs = new FluxSort();
+		NaiveFluxSort nfs = new NaiveFluxSort();
 		modesetter = new Scanner(System.in);
 		boolean running = true;
 		while(running)
@@ -40,7 +40,7 @@ public class FluxSort
 		}
 	}
 	
-	public static void charMode(FluxSort fs)
+	public static void charMode(NaiveFluxSort fs)
 	{
 		streams = 0; comparisons = 0; swaps = 0;
 		testarray = new String(vector).chars().toArray();
@@ -56,7 +56,7 @@ public class FluxSort
 		System.out.println("----------------------------------------------");
 	}
 	
-	public static void integerMode(FluxSort fs)
+	public static void integerMode(NaiveFluxSort fs)
 	{
 		streams = 0; comparisons = 0; swaps = 0;
 		System.out.println("Length \t Swaps");
@@ -71,53 +71,119 @@ public class FluxSort
 
 	public void fluxSort(int[] arrayed) 
 	{
-		boolean locked = true; 
+		boolean locked = true, thorough = false; 
 		int tht = -1, aux = 0, top = 0, btm = arrayed.length-1;
 		while(true)
 		{
-			//Reverse every contrary flux found upstream
-			locked = false; int j = top; 
-			while(j <= btm)
+			//Reverse every backflux found upstream
+			locked = false; thorough = false; int i = top; 
+			while(i <= btm)
 			{
 				if(tht != -1)
 				{          
-					if(j == btm || less(j, j+1))
+					if(i == btm || less(i, i+1))
 					{
-						if(j-tht == 1) exch(j, tht); 
+						if(i-tht == 1) exch(i, tht); 
 						else 
 						{
-							reverse(tht, j); 
-							//thorough = true; 
+							reverse(tht, i); 
+							thorough = true; 
 						}
-						aux = j; tht = -1; 
-						if(j == btm) j++;
+						aux = i; tht = -1; 
+						if(i == btm) i++;
 					}
-					else j++;
+					else i++;
 				}
 				else
-				{ if(j != btm && less(j+1, j)) { locked = true; tht = j; } j++; }
+				{ if(i != btm && less(i+1, i)) { locked = true; tht = i; } i++; }
 			}
 			btm = aux-1; printArray(arrayed, "(Reverse upstream)", true);
 			streams++; if (!locked || btm-top <= 1) return;
 
-			//Overlap every parallel fluxes found downstream
-			int v = btm, post = btm; boolean dpeak = false;
-			while(v > top)
+			//Splash every pair of waves found upstream
+			if(!thorough)
 			{
-				if(less(v, v-1) || v == top + 1)
+				int j = top, pre = top; boolean upeak = false;
+				while(j <= btm)
 				{
-					if(dpeak)
+					if(less(j+1, j) || j == btm)
 					{
-						reverse(v, post);
-						post = v-1;
-						dpeak = false;
+						if(upeak)
+						{
+							reverse(pre, j);
+							pre = j+1;
+							upeak = false;
+						}
+						else upeak = true;
 					}
-					else dpeak = true;
-				}
-				v--;
+					j++;
+				}	
+				printArray(arrayed, "(Splash upstream)", true); 
+				streams++;
 			}
-			printArray(arrayed, "(Overlap downstream)", true); 
-			streams++;
+
+			//Just splash the whole stream
+			else
+			{
+				reverse(top, btm);
+				printArray(arrayed, "(Splash everywhere)", true); 
+				streams++;
+			}
+
+			//Reverse every backflux found downstream
+			locked = false; thorough = false; int u = btm; 
+			while(u >= top)
+			{
+				if(tht != -1)
+				{
+					if(u == top || less(u-1, u))
+					{
+						if(tht-u == 1) exch(tht, u); 
+						else 
+						{
+							reverse(u, tht); 
+							thorough = true; 
+						}
+						aux = u; tht = -1; 
+						if(u == top) u--;
+					}
+					else u--;
+				}
+				else
+				{ if(u != top && less(u, u-1)) { locked = true; tht = u ; } u--; }
+			}
+			top = aux+1; printArray(arrayed, "(Reverse downstream)", true);
+			streams++; if (!locked || btm-top <= 1) return;
+
+			//Splash every pair of waves found downstream
+			if(!thorough)
+			{
+				int v = btm, post = btm; boolean dpeak = false;
+				while(v >= top)
+				{
+					if(less(v, v-1) || v == top)
+					{
+						if(dpeak)
+						{
+							reverse(v, post);
+							post = v-1;
+							dpeak = false;
+						}
+						else dpeak = true;
+					}
+					v--;
+				}
+				printArray(arrayed, "(Splash downstream)", true); 
+				streams++;
+			}
+
+			//Just splash the whole stream
+			else
+			{
+				reverse(top, btm);
+				printArray(arrayed, "(Splash everywhere)", true); 
+				streams++;
+			}
 		} 
 	}
 
@@ -141,14 +207,6 @@ public class FluxSort
 		for (int m = 0; m <= halb; m++)
 			if(less(o-m, e+m))
 				exch(e+m, o-m); 
-	}
-	
-	private void reverseOut(int i, int u, int top, int btm) 
-	{
-		while(i > top && u < btm && less(u, i))
-		{
-			exch(i, u); i--; u++;
-		}
 	}
 
 	private static void printArray(int[] arrayed, String msg, boolean cryptic)
