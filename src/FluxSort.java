@@ -7,7 +7,8 @@ public class FluxSort
 	//{'E', 'A', 'O', 'S', 'R', 'N', 'I', 'D', 'L', 'C', 'T', 'U', 'M', 'P', 'B', 'G', 'V', 'Y', 'Q', 'H', 'F', 'Z', 'J', 'X', 'W', 'K', '0', '5', '4', '2', '9', '8', '6', '7', '3', '1' }
 	//{'C', 'A', 'P', 'M', 'E', 'T', 'B', 'S', 'R', 'D', 'L', 'V', 'G', 'F', 'I', 'H', 'O', 'N', 'J', 'Z', 'Q', 'U', 'Y', 'K', 'W', 'X', '9', '4', '1', '3', '0', '5', '7', '2', '6', '8' }
 	//{'Z', 'Y', 'X', 'W', 'V', 'U', 'T', 'S', 'R', 'Q', 'P', 'O', 'N', 'M', 'L', 'K', 'J', 'I', 'H', 'G', 'F', 'E', 'D', 'C', 'B', 'A', '9', '8', '7', '6', '5', '4', '3', '2', '1', '0' }
-	public static char[] vector = { 'E', 'A', 'O', 'S', 'R', 'N', 'I', 'D', 'L', 'C', 'T', 'U', 'M', 'P', 'B', 'G', 'V', 'Y', 'Q', 'H', 'F', 'Z', 'J', 'X', 'W', 'K', '9', '4', '1', '3', '0', '5', '7', '2', '6', '8' }; 
+	//{'Z', '0', 'Y', '1', 'X', '2', 'W', '3', 'V', '4', 'U', '5', 'T', '6', 'S', '7', 'R', '8', 'Q', '9', 'P', 'A', 'O', 'B', 'N', 'C', 'M', 'D', 'L', 'E', 'K', 'F', 'J', 'G', 'I', 'H' } Nightmare case
+	public static char[] vector = { 'Z', '0', 'Y', '1', 'X', '2', 'W', '3', 'V', '4', 'U', '5', 'T', '6', 'S', '7', 'R', '8', 'Q', '9', 'P', 'A', 'O', 'B', 'N', 'C', 'M', 'D', 'L', 'E', 'K', 'F', 'J', 'G', 'I', 'H' }; 
 	public static int[] testarray;
 	public static int streams;
 	public static int comparisons;
@@ -58,13 +59,20 @@ public class FluxSort
 	
 	public static void integerMode(FluxSort fs)
 	{
-		System.out.println("Length \t Compars \t Swaps");
+		System.out.println("Length\tCompars\tSwaps\tSorted\tTime");
 		for(int x = 1; x <= 1000; x++)
 		{
 			testarray = IntStream.generate(() -> new Random().nextInt(100)).limit(x).toArray();
+			int[] refarray = testarray.clone();
 			streams = 0; comparisons = 0; swaps = 0;
+			long start = System.nanoTime();
 			fs.fluxSort(testarray, false);
-			System.out.println(x + " \t " + comparisons + " \t " + swaps);
+			long end = System.nanoTime();
+			boolean validator = fs.isSorted(testarray.length-1);
+			String sorted = validator == true ? "Yes" : "No";
+			System.out.println(x + "\t" + comparisons + "\t " + swaps 
+					+ "\t" + sorted + " \t"  + (end - start) + " ns");
+			if (!validator) printArray(refarray, "WARNING!", false);
 		}
 	}
 
@@ -93,7 +101,7 @@ public class FluxSort
 				else
 				{ if(i != btm && less(i+1, i)) { tht = i; } i++; }
 			}
-			btm = aux-1; streams++; 
+			btm = aux; streams++; 
 			if (verbose) printArray(arrayed, "(Reverse upstream)", true);
 			if (!locked || btm-top <= 1) return;
 			
@@ -130,7 +138,7 @@ public class FluxSort
 				else
 				{ if(u != top && less(u, u-1)) { tht = u ; } u--; }
 			}
-			top = aux+1; streams++; 
+			top = aux; streams++; 
 			if (verbose) printArray(arrayed, "(Reverse downstream)", true);
 			if (!locked || btm-top <= 1) return;
 
@@ -166,10 +174,14 @@ public class FluxSort
 
 	private void reverseIn(int e, int o) 
 	{
-		int half = (int) ((o-e)/2);
-		for (int m = 0; m <= half; m++)
+		int half = (int) ((o-e)/2), m = 0;
+		while(m <= half)
+		{
 			if(less(o-m, e+m))
 				exch(e+m, o-m); 
+			else break;
+			m++;
+		}
 	}
 	
 	private int reverseOut(int l, int r, int top, int btm) 
@@ -180,6 +192,14 @@ public class FluxSort
 			if(!less(r, l)) break;
 		}
 		return l + 1;
+	}
+	
+	private boolean isSorted(int arraylength)
+	{
+		for(int n=0; n<arraylength; n++)
+			if(!less(n, n+1) && less(n+1, n))
+				return false;
+		return true;
 	}
 
 	private static void printArray(int[] arrayed, String msg, boolean cryptic)
