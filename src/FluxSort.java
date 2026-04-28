@@ -8,7 +8,7 @@ public class FluxSort
 	//{'C', 'A', 'P', 'M', 'E', 'T', 'B', 'S', 'R', 'D', 'L', 'V', 'G', 'F', 'I', 'H', 'O', 'N', 'J', 'Z', 'Q', 'U', 'Y', 'K', 'W', 'X', '9', '4', '1', '3', '0', '5', '7', '2', '6', '8' }
 	//{'Z', 'Y', 'X', 'W', 'V', 'U', 'T', 'S', 'R', 'Q', 'P', 'O', 'N', 'M', 'L', 'K', 'J', 'I', 'H', 'G', 'F', 'E', 'D', 'C', 'B', 'A', '9', '8', '7', '6', '5', '4', '3', '2', '1', '0' }
 	//{'Z', '0', 'Y', '1', 'X', '2', 'W', '3', 'V', '4', 'U', '5', 'T', '6', 'S', '7', 'R', '8', 'Q', '9', 'P', 'A', 'O', 'B', 'N', 'C', 'M', 'D', 'L', 'E', 'K', 'F', 'J', 'G', 'I', 'H' } Nightmare case
-	public static char[] vector = { 'Z', '0', 'Y', '1', 'X', '2', 'W', '3', 'V', '4', 'U', '5', 'T', '6', 'S', '7', 'R', '8', 'Q', '9', 'P', 'A', 'O', 'B', 'N', 'C', 'M', 'D', 'L', 'E', 'K', 'F', 'J', 'G', 'I', 'H' }; 
+	public static char[] vector = { 48, 86, 80, 30, 51, 42, 56, 93, 6, 23, 90, 79, 17, 67, 45, 96, 20, 56, 64, 61, 88, 0, 76, 60, 95, 93, 41, 18, 22, 69, 30, 60, 18, 64, 53, 67, 67, 97, 23, 41, 29, 80, 66, 39, 70, 48, 91, 24, 32, 12, 37, 47, 15, 13, 36, 95, 23, 41, 28, 4, 86, 95, 39, 63 }; 
 	public static int[] testarray;
 	public static int streams;
 	public static int comparisons;
@@ -49,7 +49,7 @@ public class FluxSort
 		long start = System.nanoTime();
 		fs.fluxSort(testarray, true);
 		long end = System.nanoTime();
-		printArray(testarray, "(Sorted output)", true);
+		if(fs.isSorted(testarray.length)) printArray(testarray, "(Sorted output)", true);
 		System.out.println("Comparisons performed: " + comparisons);
 		System.out.println("Swaps performed: " + swaps);
 		System.out.println("Needed streams: " + streams);
@@ -86,13 +86,13 @@ public class FluxSort
 			locked = false; int i = top; tht = -1;
 			while(i <= btm)
 			{
-				if(tht != -1)
+				if(tht != -1) //Marked
 				{          
 					if(i == btm || less(i, i+1))
 					{
 						locked = true; 
 						if(i-tht == 1) exch(i, tht); 
-						else reverseIn(tht, i); 
+						else reverse(tht, i); 
 						aux = i; tht = -1; 
 						if(i == btm) i++;
 					}
@@ -102,34 +102,41 @@ public class FluxSort
 				{ if(i != btm && less(i+1, i)) { tht = i; } i++; }
 			}
 			btm = aux; streams++; 
-			if (verbose) printArray(arrayed, "(Reverse upstream)", true);
+			if (verbose) printArray(arrayed, "(Reverse upstream)", false);
 			if (!locked || btm-top <= 1) return;
 			
 			//Overlap every parallel fluxes found upstream
 			int j = top; locked = false;
 			while(j < btm)
 			{
-				if(less(j+1, j))
+				if(tht != -1) //Marked
 				{
-					tht = j; locked = true;
-					j = reverseOut(tht, tht+1, top, btm);
+					if(tht == top || !less(j+1, tht-1))
+					{
+						locked = true; 
+						if(j-tht == 1) exch(j, tht); 
+						else reverse(tht, j); 
+						tht = -1;
+					}
+					else tht--;
 				}
-				j++;
+				else if(less(j+1, j)) { tht = j; } 
+				j++; 
 			}
-			if (verbose) printArray(arrayed, "(Overlap upstream)", true); 
+			if (verbose) printArray(arrayed, "(Overlap upstream)", false); 
 			streams++; if (!locked || btm-top <= 1) return;
 			
 			//Reverse every contrary flux downstream
 			locked = false; int u = btm; tht = -1;
 			while(u >= top)
 			{
-				if(tht != -1)
+				if(tht != -1) //Marked
 				{
 					if(u == top || less(u-1, u))
 					{
 						locked = true; 
 						if(tht-u == 1) exch(tht, u); 
-						else reverseIn(u, tht);  
+						else reverse(u, tht);  
 						aux = u; tht = -1; 
 						if(u == top) u--;
 					}
@@ -139,21 +146,28 @@ public class FluxSort
 				{ if(u != top && less(u, u-1)) { tht = u ; } u--; }
 			}
 			top = aux; streams++; 
-			if (verbose) printArray(arrayed, "(Reverse downstream)", true);
+			if (verbose) printArray(arrayed, "(Reverse downstream)", false);
 			if (!locked || btm-top <= 1) return;
 
 			//Overlap every parallel fluxes found downstream
 			int v = btm; locked = false;
 			while(v > top)
 			{
-				if(less(v, v-1))
+				if(tht != -1) //Marked
 				{
-					tht = v; locked = true;
-					v = reverseOut(tht-1, tht, top, btm);
+					if(tht == btm || !less(tht+1, v-1))
+					{
+						locked = true; 
+						if(tht-v == 1) exch(tht, v); 
+						else reverse(v, tht); 
+						tht = -1;
+					}
+					else tht++;
 				}
-				v--;
+				else if(less(v, v-1)) { tht = v; } 
+				v--; 
 			}
-			if (verbose) printArray(arrayed, "(Overlap downstream)", true); 
+			if (verbose) printArray(arrayed, "(Overlap downstream)", false); 
 			streams++; if (!locked || btm-top <= 1) return;
 		} 
 	}
@@ -172,7 +186,7 @@ public class FluxSort
 		swaps++;
 	}
 
-	private void reverseIn(int e, int o) 
+	private void reverse(int e, int o) 
 	{
 		int half = (int) ((o-e)/2), m = 0;
 		while(m <= half)
@@ -184,19 +198,19 @@ public class FluxSort
 		}
 	}
 	
-	private int reverseOut(int l, int r, int top, int btm) 
-	{
-		while(l > top && r < btm)
-		{
-			exch(l, r); l--; r++;
-			if(!less(r, l)) break;
-		}
-		return l + 1;
-	}
+//	private int reverseOut(int l, int r, int top, int btm) 
+//	{
+//		while(l > top && r < btm)
+//		{
+//			exch(l, r); l--; r++;
+//			if(!less(r, l)) break;
+//		}
+//		return l + 1;
+//	}
 	
 	private boolean isSorted(int arraylength)
 	{
-		for(int n=0; n<arraylength; n++)
+		for(int n=0; n<arraylength-1; n++)
 			if(!less(n, n+1) && less(n+1, n))
 				return false;
 		return true;
