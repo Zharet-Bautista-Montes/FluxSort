@@ -9,7 +9,7 @@ public class FluxSort
 	//{'C', 'A', 'P', 'M', 'E', 'T', 'B', 'S', 'R', 'D', 'L', 'V', 'G', 'F', 'I', 'H', 'O', 'N', 'J', 'Z', 'Q', 'U', 'Y', 'K', 'W', 'X', '9', '4', '1', '3', '0', '5', '7', '2', '6', '8' }
 	//{'Z', 'Y', 'X', 'W', 'V', 'U', 'T', 'S', 'R', 'Q', 'P', 'O', 'N', 'M', 'L', 'K', 'J', 'I', 'H', 'G', 'F', 'E', 'D', 'C', 'B', 'A', '9', '8', '7', '6', '5', '4', '3', '2', '1', '0' }
 	//{'Z', '0', 'Y', '1', 'X', '2', 'W', '3', 'V', '4', 'U', '5', 'T', '6', 'S', '7', 'R', '8', 'Q', '9', 'P', 'A', 'O', 'B', 'N', 'C', 'M', 'D', 'L', 'E', 'K', 'F', 'J', 'G', 'I', 'H' } Nightmare case
-	public static char[] vector = { 'C', 'A', 'P', 'M', 'E', 'T', 'B', 'S', 'R', 'D', 'L', 'V', 'G', 'F', 'I', 'H', 'O', 'N', 'J', 'Z', 'Q', 'U', 'Y', 'K', 'W', 'X', '9', '4', '1', '3', '0', '5', '7', '2', '6', '8' }; 
+	public static char[] vector = { 'E', 'A', 'O', 'S', 'R', 'N', 'I', 'D', 'L', 'C', 'T', 'U', 'M', 'P', 'B', 'G', 'V', 'Y', 'Q', 'H', 'F', 'Z', 'J', 'X', 'W', 'K', '0', '5', '4', '2', '9', '8', '6', '7', '3', '1' }; 
 	public static int[] testarray;
 	public static int streams;
 	public static int comparisons;
@@ -48,7 +48,7 @@ public class FluxSort
 		testarray = new String(vector).chars().toArray();
 		printArray(testarray, "(Unsorted input)", true);
 		long start = System.nanoTime();
-		fs.fluxSort(testarray, true);
+		fs.fluxSort(testarray, true, 0, testarray.length-1);
 		long end = System.nanoTime();
 		if(fs.isSorted(testarray.length)) printArray(testarray, "(Sorted output)", true);
 		System.out.println("Comparisons performed: " + comparisons);
@@ -70,7 +70,7 @@ public class FluxSort
 			int[] refarray = testarray.clone();
 			streams = 0; comparisons = 0; swaps = 0;
 			long start = System.nanoTime();
-			fs.fluxSort(testarray, false);
+			fs.fluxSort(testarray, false, 0, testarray.length-1);
 			long end = System.nanoTime();
 			boolean validator = fs.isSorted(testarray.length-1);
 			String sorted = validator == true ? "Yes" : "No";
@@ -93,31 +93,45 @@ public class FluxSort
 		System.out.println((timelog/(timelist.size()-1)) + " Logarithmic time");
 	}
 
-	public void fluxSort(int[] arrayed, boolean verbose) 
+	public void fluxSort(int[] arrayed, boolean verbose, int top, int btm) 
 	{
-		int aux = 0, top = 0, btm = arrayed.length-1;
-		while(true)
-		{	
-			//Reverse every contrary flux found upstream
+		int aux = top;
+		int half = (int) (btm-top)/2;
+		if(half >= 1)
+		{
 			aux = reverseContraryFlow(btm, 1, top); btm = aux; streams++; 
-			if (verbose) printArray(arrayed, "(Reverse upstream)", true);
+			if (verbose) printArray(arrayed, "[" + top + "-" + btm + "] " + "(Reverse upstream)", true);
 			if (top == aux || btm-top <= 1) return;
-			
-			//Overlap every parallel fluxes found upstream
-			aux = overlapParallelFlows(btm, 1, top); streams++; 
-			if (verbose) printArray(arrayed, "(Overlap upstream)", true); 
-			if (top == aux || btm-top <= 1) return;
-			
-			//Reverse every contrary flux downstream
 			aux = reverseContraryFlow(top, -1, btm); top = aux; streams++; 
-			if (verbose) printArray(arrayed, "(Reverse downstream)", true);
+			if (verbose) printArray(arrayed, "[" + top + "-" + btm + "] " + "(Reverse downstream)", true);
 			if (btm == aux || btm-top <= 1) return;
-
-			//Overlap every parallel fluxes found downstream
-			aux = overlapParallelFlows(top, -1, btm); streams++; 
-			if (verbose) printArray(arrayed, "(Overlap downstream)", true); 
-			if (btm == aux || btm-top <= 1) return;
-		} 
+			fluxSort(arrayed, verbose, top, top+half);
+			fluxSort(arrayed, verbose, btm-half, btm);
+			while(true)
+			{	
+				//Reverse every contrary flux found upstream
+				aux = reverseContraryFlow(btm, 1, top); btm = aux; streams++; 
+				if (verbose) printArray(arrayed, "[" + top + "-" + btm + "] " + "(Reverse upstream)", true);
+				if (top == aux || btm-top <= 1) return;
+				
+				//Overlap every parallel fluxes found upstream
+				aux = overlapParallelFlows(btm, 1, top); streams++; 
+				if (verbose) printArray(arrayed, "[" + top + "-" + btm + "] " + "(Overlap upstream)", true); 
+				if (top == aux || btm-top <= 1) return;
+				
+				//Reverse every contrary flux downstream
+				aux = reverseContraryFlow(top, -1, btm); top = aux; streams++; 
+				if (verbose) printArray(arrayed, "[" + top + "-" + btm + "] " + "(Reverse downstream)", true);
+				if (btm == aux || btm-top <= 1) return;
+	
+				//Overlap every parallel fluxes found downstream
+				aux = overlapParallelFlows(top, -1, btm); streams++; 
+				if (verbose) printArray(arrayed, "[" + top + "-" + btm + "] " + "(Overlap downstream)", true); 
+				if (btm == aux || btm-top <= 1) return;
+			} 
+		}
+		else if(less(btm, top)) exch(top, btm);
+		else return;
 	}
 	
 	private int reverseContraryFlow(int limit, int dir, int aux)
@@ -158,7 +172,7 @@ public class FluxSort
 	
 	private int overlapParallelFlows(int limit, int dir, int aux)
 	{
-		boolean endOPF, startOPF; 
+		boolean endOPF, startOPF, oslever = false; 
 		int end, start, u = aux, tht = -1;
 		while(dir == 1 ? u < limit : u > limit)
 		{
@@ -175,15 +189,20 @@ public class FluxSort
 			}
 			if(tht != -1) //Marked
 			{
-				if(tht == limit || endOPF)
+				if(oslever && (tht == aux || endOPF || u == limit || startOPF))
 				{
 					if(end-start == 1) exch(end, start); 
 					else reverse(start, end);  
 					aux = u; tht = -1;
+					if(startOPF) oslever = false; 
 				}
 				else tht -= dir;
 			}
-			else if(startOPF) { tht = u; } 
+			else if(startOPF) 
+			{ 
+				if(oslever) oslever = false;
+				else { oslever = true; tht = u;}
+			} 
 			u += dir; 
 		}
 		return aux;
@@ -205,11 +224,11 @@ public class FluxSort
 
 	private void reverse(int e, int o) 
 	{
-		while (e < o) {
+		while (e < o) 
+		{
 			if(less(o, e)) exch(e, o); 
 			else break;
-	        e++;
-	        o--;
+	        e++; o--;
 	    }
 	}
 	
